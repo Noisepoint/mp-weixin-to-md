@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class ParserMarkdownTest(unittest.TestCase):
     def setUp(self):
-        self.html = (ROOT / "examples" / "minimal.html").read_text(encoding="utf-8")
+        self.html = (ROOT / "tests" / "fixtures" / "minimal.html").read_text(encoding="utf-8")
 
     def test_parse_basic_article(self):
         article = parse_wechat_html(self.html, source_url="https://mp.weixin.qq.com/s/demo")
