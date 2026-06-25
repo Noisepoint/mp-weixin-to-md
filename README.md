@@ -29,23 +29,17 @@ python3 -m pipx ensurepath
 
 然后新开一个终端。
 
-再安装本项目：
+再安装本工具：
 
 ```bash
-git clone https://github.com/Noisepoint/mp-weixin-to-md.git
-cd mp-weixin-to-md
-pipx install .
+pipx install git+https://github.com/Noisepoint/mp-weixin-to-md.git
 ```
 
-安装完成后，不需要再进入项目目录。
-
-以后在任何目录都可以直接运行：
+安装完成后，在任何目录都可以直接运行：
 
 ```bash
 mp-weixin-to-md "https://mp.weixin.qq.com/s/xxxx"
 ```
-
-不要复制 Markdown 代码块标记。只复制代码块里面的命令，不要复制开头和结尾的三个反引号。
 
 ## 用法
 
