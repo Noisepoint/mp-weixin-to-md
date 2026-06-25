@@ -32,12 +32,12 @@ python3 -m pipx ensurepath
 再安装本项目：
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/Noisepoint/mp-weixin-to-md.git
 cd mp-weixin-to-md
 pipx install .
 ```
 
-其中 `<repo-url>` 要换成真实 GitHub 地址。安装完成后，不需要再进入项目目录。
+安装完成后，不需要再进入项目目录。
 
 以后在任何目录都可以直接运行：
 
