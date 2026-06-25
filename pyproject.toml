@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mp-weixin-to-md"
+version = "0.1.0"
+description = "Convert WeChat Official Account article HTML or URL to Markdown."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "mp-weixin-to-md contributors" }]
+dependencies = ["lxml>=5.0"]
+keywords = ["wechat", "markdown", "mp.weixin", "converter"]
+
+[project.scripts]
+mp-weixin-to-md = "mp_weixin_to_md.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
