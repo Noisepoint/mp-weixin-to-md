@@ -29,7 +29,7 @@ class ParserMarkdownTest(unittest.TestCase):
         markdown = render_markdown(article)
 
         self.assertIn("# 示例公众号文章", markdown)
-        self.assertIn("> 作者：示例作者", markdown)
+        self.assertIn("> 公众号：示例作者", markdown)
         self.assertIn("![正文图](https://mmbiz.qpic.cn/sz_mmbiz_png/example/1?wx_fmt=png)", markdown)
         self.assertIn("<span style=\"color:#ff0000\">红色重点</span>", markdown)
 
@@ -90,17 +90,29 @@ class ParserMarkdownTest(unittest.TestCase):
         self.assertIn("**粗体**", markdown)
         self.assertNotIn('<span style="font-weight:700">粗体</span>', markdown)
 
-    def test_author_can_be_in_body_footer(self):
+    def test_account_can_be_extracted_from_js_name(self):
+        html = self.html.replace(
+            'var nickname = "示例作者".html(false);',
+            'var user_name = "gh_94dba26f8ca0";',
+        ).replace(
+            '<body>',
+            '<body><span id="js_name">数字生命卡兹克</span>',
+        )
+        article = parse_wechat_html(html)
+
+        self.assertEqual(article.author, "数字生命卡兹克")
+
+    def test_body_footer_is_not_used_as_account(self):
         html = self.html.replace(
             'var nickname = "示例作者".html(false);',
             'var user_name = "gh_94dba26f8ca0";',
         ).replace(
             "</div>",
-            '<p><span style="color:#b2b2b2">>/ 作者：卡兹克></span></p></div>',
+            '<p><span style="color:#b2b2b2">>/ 作者：卡兹克</span></p></div>',
         )
         article = parse_wechat_html(html)
 
-        self.assertEqual(article.author, "卡兹克")
+        self.assertEqual(article.author, "")
 
 
 if __name__ == "__main__":

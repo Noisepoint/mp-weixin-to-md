@@ -83,8 +83,6 @@ def parse_wechat_html(source_html: str, source_url: str = "") -> Article:
 
     renderer = _BodyRenderer()
     body = renderer.render(content)
-    if not author:
-        author = _extract_author_from_body(body)
     cover = (
         ImageRef(url=cover_url, alt=title, ext=resource_extension(cover_url, "jpg"), role="cover")
         if cover_url
@@ -125,6 +123,8 @@ def _extract_meta(source_html: str, key: str) -> str:
         ],
         "author": [
             r'var\s+nickname\s*=\s*"(.*?)"\.html',
+            r'id="js_name"[^>]*>(.*?)<',
+            r'class="profile_nickname"[^>]*>(.*?)<',
             r'var\s+user_name\s*=\s*"(.*?)"',
         ],
         "cover": [
@@ -148,17 +148,6 @@ def _extract_author(source_html: str) -> str:
     if nickname.startswith("gh_"):
         return ""
     return nickname
-
-
-def _extract_author_from_body(body: str) -> str:
-    tail = "\n".join(body.splitlines()[-20:])
-    clean_tail = re.sub(r"<[^>]+>", "", tail)
-    clean_tail = html.unescape(clean_tail)
-    match = re.search(r"(?:^|[>/\s])作者[：:]\s*([^\s<，,。|/<>]{1,30})", clean_tail)
-    if not match:
-        return ""
-    author = match.group(1).strip(" >")
-    return "" if author.startswith("gh_") else author
 
 
 def _extract_published(source_html: str) -> str:

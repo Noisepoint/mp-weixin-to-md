@@ -41,7 +41,7 @@ def render_markdown(article: Article, options: MarkdownOptions | None = None) ->
 def _source_lines(article: Article) -> list[str]:
     lines: list[str] = []
     if article.author:
-        lines.append(f"> 作者：{article.author}")
+        lines.append(f"> 公众号：{article.author}")
     if article.published:
         lines.append(f"> 发布：{article.published}")
     if article.source_url:
