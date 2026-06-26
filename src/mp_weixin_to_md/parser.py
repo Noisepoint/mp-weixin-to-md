@@ -168,6 +168,7 @@ def _clean_text(value: str) -> str:
 class _BodyRenderer:
     def __init__(self) -> None:
         self.images: list[ImageRef] = []
+        self._last_code_key = ""
 
     def render(self, element) -> str:
         output: list[str] = []
@@ -184,9 +185,8 @@ class _BodyRenderer:
                 continue
             tag = child.tag.lower()
             if tag == "pre":
-                code = child.text_content().replace(NBSP, " ").replace(ZERO_WIDTH, "").strip("\n")
-                if code.strip():
-                    output.append(f"\n\n```\n{code}\n```\n\n")
+                if not self._is_hidden(child):
+                    output.append(self._render_code_block(child))
             elif tag in HEADING_TAGS:
                 text = self._render_inline(child).strip()
                 if text:
@@ -245,7 +245,10 @@ class _BodyRenderer:
         return "".join(parts)
 
     def _render_list(self, element, output: list[str], ordered: bool, depth: int = 0) -> None:
-        number = 1
+        try:
+            number = int(element.get("start", "1")) if ordered else 1
+        except ValueError:
+            number = 1
         for child in element:
             if not isinstance(child.tag, str):
                 continue
@@ -280,6 +283,78 @@ class _BodyRenderer:
                     ordered=nested_list.tag.lower() == "ol",
                     depth=depth + 1,
                 )
+
+    def _render_code_block(self, element) -> str:
+        nested_pres = [
+            item for item in element.iterdescendants("pre")
+            if not self._is_hidden(item)
+        ]
+        code_sources = nested_pres or [element]
+        bodies: list[str] = []
+        seen: set[str] = set()
+        for source in code_sources:
+            body = "\n".join(self._code_lines_from(source))
+            key = self._code_key(body)
+            if body.strip() and key not in seen:
+                bodies.append(body)
+                seen.add(key)
+
+        parts: list[str] = []
+        body = "\n".join(bodies)
+        if body.strip():
+            key = self._code_key(body)
+            if key != self._last_code_key:
+                parts.append(f"\n\n```\n{body}\n```\n\n")
+                self._last_code_key = key
+
+        for text in self._trailing_pre_paragraphs(element, nested_pres):
+            parts.append(f"\n\n{text}\n\n")
+
+        return "".join(parts)
+
+    def _code_lines_from(self, element) -> list[str]:
+        direct_codes = [
+            child for child in element
+            if isinstance(child.tag, str) and child.tag.lower() == "code" and not self._is_hidden(child)
+        ]
+        if direct_codes:
+            lines = [
+                child.text_content().replace(NBSP, " ").replace(ZERO_WIDTH, "").rstrip("\n")
+                for child in direct_codes
+            ]
+        else:
+            raw = element.text_content().replace(NBSP, " ").replace(ZERO_WIDTH, "")
+            lines = raw.split("\n")
+        while lines and not lines[0].strip():
+            lines.pop(0)
+        while lines and not lines[-1].strip():
+            lines.pop()
+        return lines
+
+    def _trailing_pre_paragraphs(self, element, nested_pres) -> list[str]:
+        if not nested_pres:
+            return []
+        paragraphs: list[str] = []
+        for item in element.iterdescendants():
+            if not isinstance(item.tag, str) or item.tag.lower() != "p" or self._is_hidden(item):
+                continue
+            if any(pre is item or pre in item.iterancestors() for pre in nested_pres):
+                continue
+            text = self._render_inline(item).strip().replace("\n", " ")
+            if text:
+                paragraphs.append(text)
+        return paragraphs
+
+    def _is_hidden(self, element) -> bool:
+        style = _parse_style(element.get("style", ""))
+        return (
+            style.get("display") == "none"
+            or style.get("visibility") == "hidden"
+            or element.get("hidden") is not None
+        )
+
+    def _code_key(self, body: str) -> str:
+        return re.sub(r"\s+", "", body)
 
     def _add_image(self, element) -> str:
         url = (

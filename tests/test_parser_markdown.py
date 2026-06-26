@@ -14,6 +14,24 @@ class ParserMarkdownTest(unittest.TestCase):
     def setUp(self):
         self.html = (ROOT / "tests" / "fixtures" / "minimal.html").read_text(encoding="utf-8")
 
+    def html_with_body(self, body: str) -> str:
+        return f"""<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script>
+    var msg_title = "示例公众号文章".html(false);
+    var nickname = "示例作者".html(false);
+  </script>
+</head>
+<body>
+  <div id="js_content">
+    {body}
+  </div>
+</body>
+</html>
+"""
+
     def test_parse_basic_article(self):
         article = parse_wechat_html(self.html, source_url="https://mp.weixin.qq.com/s/demo")
 
@@ -113,6 +131,47 @@ class ParserMarkdownTest(unittest.TestCase):
         article = parse_wechat_html(html)
 
         self.assertEqual(article.author, "")
+
+    def test_ordered_list_respects_start_attribute(self):
+        article = parse_wechat_html(self.html_with_body("""
+<ol>
+  <li>第一项</li>
+  <li>第二项</li>
+</ol>
+<ol start="3">
+  <li>第三项</li>
+  <li>第四项</li>
+</ol>
+"""))
+
+        self.assertIn("1. 第一项", article.body)
+        self.assertIn("2. 第二项", article.body)
+        self.assertIn("3. 第三项", article.body)
+        self.assertIn("4. 第四项", article.body)
+
+    def test_nested_pre_prefers_visible_inner_code_and_keeps_explanation(self):
+        article = parse_wechat_html(self.html_with_body("""
+<pre>
+  <pre><code>npm create vite@latest
+cd demo</code></pre>
+  <pre style="display:none"><code>npm create vite@latest
+cd demo</code></pre>
+  <p>然后输入 droid 并继续。</p>
+</pre>
+"""))
+
+        self.assertIn("```\nnpm create vite@latest\ncd demo\n```", article.body)
+        self.assertIn("然后输入 droid 并继续。", article.body)
+        code_block = article.body.split("```")[1]
+        self.assertNotIn("然后输入 droid", code_block)
+
+    def test_placeholder_url_stays_plain_text(self):
+        article = parse_wechat_html(self.html_with_body("""
+<p>配置地址：https://[your-project-id].supabase.co</p>
+"""))
+
+        self.assertIn("https://[your-project-id].supabase.co", article.body)
+        self.assertNotIn("[https://[your-project-id].supabase.co]", article.body)
 
 
 if __name__ == "__main__":
